@@ -1,50 +1,35 @@
-# React + TypeScript + Vite
+## 📌 Project Enhancements & Design Notes
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### ✅ Google API Integration
 
-Currently, two official plugins are available:
+- Integrated **Google OAuth 2.0** to authenticate users and retrieve the `accessToken` and user info.
+- Implemented **full CRUD operations** on Google Tasks using the authenticated session.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🗂️ Task & Task List Management
 
-## Expanding the ESLint configuration
+- The provided Figma design only covered **task CRUD**, but for greater flexibility and completeness, I implemented **task list CRUD** alongside task CRUD functionality.
+- This allows users to manage multiple task lists efficiently.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### 🔍 Feature Additions
 
-- Configure the top-level `parserOptions` property like this:
+- **Status filter** implemented to toggle between `Completed` and `Pending` tasks.
+- **Task click behavior**:
+  - On **mobile**, clicking a task navigates to a detailed task page.
+  - On **desktop/laptop**, clicking a task opens a **dialog** for inline editing.
+- **Infinite scrolling** with **TanStack's `useInfiniteQuery`** for optimized performance with large task lists.
+- **Loading states** and **empty states** added for a smoother and more user-friendly experience.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 💡 UI/UX & Responsiveness
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+- Fully **responsive layout** across all devices.
+- Followed and referenced **Figma layout and button styles** closely as per the original design.
+- Added **dark mode toggle** for accessibility and modern design preferences.
+- Implemented **push notifications** using the **Web Notification API** + **IndexedDB** for local notification history.
+- Integrated **multi-language support** with `react-i18next`.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+### 🧩 Code Architecture
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+- Clean and maintainable folder structure.
+- Reusable **components**, **custom hooks**, and **utility functions** for better scalability and separation of concerns.
+
+---
