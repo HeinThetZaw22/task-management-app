@@ -14,6 +14,7 @@
 ## 🔍 Feature Additions
 
 - **Status filter** implemented to toggle between `Completed` and `Pending` tasks.
+- **Date filter** implemented to filter tasks **week-by-week**, with a breakdown of tasks for each specific day within the selected week.
 - **Task click behavior**:
   - On **mobile**, clicking a task navigates to a detailed task page.
   - On **desktop/laptop**, clicking a task opens a **dialog** for inline editing.
@@ -32,3 +33,30 @@
 
 - Clean and maintainable folder structure.
 - Reusable **components**, **custom hooks**, and **utility functions** for better scalability and separation of concerns.
+
+---
+
+## ⚙️ Project Setup Instructions
+
+This project is built with **React + Vite**.
+
+### 📦 Requirements
+
+- Node.js (v18 or higher recommended)
+- npm or yarn
+
+### 📁 Clone the repository
+
+````bash
+git clone <your-repo-url>
+cd <your-project-folder>
+
+### 📄 Environment Variables
+
+Create a `.env` file in the root directory and add the following:
+
+```env
+VITE_BASE_URL="https://tasks.googleapis.com"
+VITE_GOOGLE_CLIENT_ID="google-client-id-here-if-you-need-to-test,i-will-email"
+
+````
