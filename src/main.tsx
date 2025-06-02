@@ -9,20 +9,24 @@ import { ThemeProvider } from "./theme/theme-provider";
 import CustomToaster from "./components/custom-toaster";
 import "./i18n";
 import ErrorBoundary from "./components/error-boundary";
+import { Provider } from "react-redux";
+import { store } from "./redux/store";
 
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <ErrorBoundary>
-            <RouterProvider router={router} />
-            <CustomToaster />
-          </ErrorBoundary>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </GoogleOAuthProvider>
+    <Provider store={store}>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ErrorBoundary>
+              <RouterProvider router={router} />
+              <CustomToaster />
+            </ErrorBoundary>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </GoogleOAuthProvider>
+    </Provider>
   </StrictMode>
 );

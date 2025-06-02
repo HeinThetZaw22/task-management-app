@@ -121,7 +121,11 @@ const EditTask = ({
     <Box
       height="100%"
       display="flex"
-      sx={{ maxWidth: "1240px", mx: "auto" }}
+      sx={{
+        maxWidth: "1240px",
+        mx: "auto",
+        bgcolor: theme.palette.background.default,
+      }}
       flexDirection="column"
     >
       {/* Header */}
@@ -132,7 +136,9 @@ const EditTask = ({
         px={1}
         py={2}
         component={Paper}
-        sx={{ backgroundColor: theme.palette.background.paper }}
+        sx={{
+          bgcolor: theme.palette.background.paper,
+        }}
         elevation={1}
       >
         <Button
@@ -188,10 +194,7 @@ const EditTask = ({
           />
         </Box>
 
-        <Paper
-          variant="outlined"
-          sx={{ backgroundColor: theme.palette.background.paper }}
-        >
+        <Paper variant="outlined">
           <Box
             display="flex"
             justifyContent="space-between"
@@ -252,7 +255,6 @@ const EditTask = ({
         <Paper
           variant="outlined"
           sx={{
-            backgroundColor: theme.palette.background.paper,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",

@@ -1,4 +1,4 @@
-import { lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, useCallback, useEffect, useMemo } from "react";
 import {
   Tabs,
   Tab,
@@ -16,11 +16,7 @@ import {
   useGetTaskLists,
   useUpdateTaskList,
 } from "@/query/tasklist.query";
-import {
-  useClearCompletedTasks,
-  useGetTasks,
-  usePatchTask,
-} from "@/query/task.query";
+import { useGetTasks, usePatchTask } from "@/query/task.query";
 import { Task, TaskList } from "@/types/types";
 import toast from "react-hot-toast";
 import TaskItem from "@/components/task/task-item";
@@ -33,40 +29,38 @@ import { useInView } from "react-intersection-observer";
 import { isSameDay } from "date-fns";
 import { useTranslation } from "react-i18next";
 import Loader from "@/components/loader";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  setDialogOpen,
+  setEditingList,
+  setConfirmDeleteOpen,
+  setDueMin,
+  setDueMax,
+  setSelectedDate,
+  setUseDateFilter,
+  setSelectedListId,
+  setFilter,
+} from "@/redux/slices/uiSlice";
+import type { RootState, AppDispatch } from "@/redux/store";
 
 const WeeklyDatePicker = lazy(() => import("@/components/weekly-datepicker"));
 const TaskListDialog = lazy(() => import("@/components/home/tasklist-dialog"));
 const ConfirmDialog = lazy(() => import("@/components/confirm-dialog"));
 
 const Home = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingList, setEditingList] = useState<null | TaskList>(null);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [dueMin, setDueMin] = useState<string | undefined>();
-  const [dueMax, setDueMax] = useState<string | undefined>();
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [useDateFilter, setUseDateFilter] = useState(false);
   const { t } = useTranslation();
-
-  const getInitialSelectedListId = () => {
-    return sessionStorage.getItem("selectedListId");
-  };
-
-  const [selectedListId, setSelectedListId] = useState<string | null>(
-    getInitialSelectedListId()
-  );
-  const [filter, setFilter] = useState<null | "completed" | "uncompleted">(
-    null
-  );
-  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
-  const isFilterMenuOpen = Boolean(filterAnchorEl);
-
-  const [listMenuAnchorEl, setListMenuAnchorEl] = useState<null | HTMLElement>(
-    null
-  );
-  const isListMenuOpen = Boolean(listMenuAnchorEl);
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    dialogOpen,
+    editingList,
+    confirmDeleteOpen,
+    dueMin,
+    dueMax,
+    selectedDate,
+    useDateFilter,
+    selectedListId,
+    filter,
+  } = useSelector((state: RootState) => state.ui);
 
   const { data: taskLists } = useGetTaskLists();
   const { mutate: createTasklist } = useCreateTaskList();
@@ -91,7 +85,6 @@ const Home = () => {
     }),
   });
   const { mutate: patchTask } = usePatchTask();
-  const { mutate: clearCompletedTasks } = useClearCompletedTasks();
   const allTasks = data?.pages.flatMap((page) => page.items) ?? [];
 
   const filteredTasks = useMemo(() => {
@@ -140,7 +133,7 @@ const Home = () => {
   }, [filter]);
 
   useEffect(() => {
-    if (inView && hasNextPage && isFetchingNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [inView, hasNextPage, fetchNextPage, isFetchingNextPage]);
@@ -192,110 +185,43 @@ const Home = () => {
           onSuccess: (newList: TaskList) => {
             toast.success("Task list created");
             refetch();
-            setSelectedListId(newList.id);
+            dispatch(setSelectedListId(newList.id));
             sessionStorage.setItem("selectedListId", newList.id);
           },
           onError: () => toast.error("Failed to create task list"),
         });
       }
-      setDialogOpen(false);
+      dispatch(setDialogOpen(false));
     },
-    [updateTasklist, createTasklist]
-  );
-
-  const handleDeleteCompletedTasks = useCallback(() => {
-    handleListMenuClose();
-    clearCompletedTasks(activeListId || "", {
-      onSuccess: () => {
-        toast.success("Deleted complete tasks");
-        refetch();
-      },
-      onError: () => {
-        toast.error("Failed to delete complete tasks");
-      },
-    });
-  }, [activeListId, clearCompletedTasks, refetch]);
-
-  const handleFilterChange = useCallback(
-    (value: null | "completed" | "uncompleted") => {
-      setFilter(value);
-      handleFilterClose();
-    },
-    []
+    [updateTasklist, createTasklist, refetch, dispatch]
   );
 
   const handleToggleDateFilter = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const checked = event.target.checked;
-      setUseDateFilter(checked);
+      dispatch(setUseDateFilter(checked));
 
       if (!checked) {
-        setDueMin(undefined);
-        setDueMax(undefined);
-        setSelectedDate(null);
+        dispatch(setDueMin(undefined));
+        dispatch(setDueMax(undefined));
+        dispatch(setSelectedDate(null));
       }
     },
-    []
+    [dispatch]
   );
 
-  const handleOpenNewListDialog = () => {
-    setEditingList(null);
-    setDialogOpen(true);
-  };
-
-  const handleOpenRenameDialog = (list: TaskList) => {
-    setEditingList(list);
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
-
-  const handleListMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setListMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleListMenuClose = () => {
-    setListMenuAnchorEl(null);
-  };
-
-  const handleDeleteList = () => {
-    handleListMenuClose();
-    setConfirmDeleteOpen(true);
-  };
-
   const handleConfirmDelete = () => {
-    if (!activeListId) return;
-    deleteTasklist(activeListId, {
+    if (!selectedListId) return;
+    deleteTasklist(selectedListId, {
       onSuccess: () => {
         toast.success("Task list deleted");
-        setSelectedListId(null);
-        sessionStorage.removeItem("selectedListId");
+        dispatch(setSelectedListId(null));
       },
       onError: () => {
         toast.error("Failed to delete task list");
       },
     });
-    setConfirmDeleteOpen(false);
-  };
-
-  const handleCancelDelete = () => {
-    setConfirmDeleteOpen(false);
-  };
-
-  const handleRenameList = () => {
-    handleListMenuClose();
-    const list = taskLists?.items.find((l) => l.id === activeListId);
-    if (list) handleOpenRenameDialog(list);
-  };
-
-  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
-    setFilterAnchorEl(event.currentTarget);
-  };
-
-  const handleFilterClose = () => {
-    setFilterAnchorEl(null);
+    dispatch(setConfirmDeleteOpen(false));
   };
 
   if (!taskLists?.items?.length) {
@@ -310,7 +236,7 @@ const Home = () => {
         value={activeListId || ""}
         onChange={(_, newVal) => {
           if (newVal === "new") return;
-          setSelectedListId(newVal);
+          dispatch(setSelectedListId(newVal));
           sessionStorage.setItem("selectedListId", newVal);
         }}
         variant="scrollable"
@@ -325,7 +251,8 @@ const Home = () => {
           value="new"
           onClick={(e) => {
             e.stopPropagation();
-            handleOpenNewListDialog();
+            dispatch(setEditingList(null));
+            dispatch(setDialogOpen(true));
           }}
         />
       </Tabs>
@@ -343,9 +270,9 @@ const Home = () => {
         {useDateFilter && (
           <WeeklyDatePicker
             onFilterChange={({ dueMin, dueMax, selectedDate }) => {
-              setDueMin(dueMin);
-              setDueMax(dueMax);
-              setSelectedDate(selectedDate);
+              dispatch(setDueMin(dueMin));
+              dispatch(setDueMax(dueMax));
+              dispatch(setSelectedDate(selectedDate));
             }}
           />
         )}
@@ -371,23 +298,11 @@ const Home = () => {
                 {list.title} ({filteredTasks.length})
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <FilterMenu
-                  anchorEl={filterAnchorEl}
-                  open={isFilterMenuOpen}
-                  onClick={handleFilterClick}
-                  onClose={handleFilterClose}
-                  currentFilter={filter}
-                  onChange={handleFilterChange}
-                />
+                <FilterMenu />
 
                 <ListMenu
-                  anchorEl={listMenuAnchorEl}
-                  open={isListMenuOpen}
-                  onClick={handleListMenuClick}
-                  onClose={handleListMenuClose}
-                  onDelete={handleDeleteList}
-                  onRename={handleRenameList}
-                  onDeleteCompleted={handleDeleteCompletedTasks}
+                  items={taskLists?.items || []}
+                  activeListId={activeListId}
                   disableDelete={activeListId === taskLists?.items?.[0]?.id}
                 />
               </Box>
@@ -453,7 +368,7 @@ const Home = () => {
 
       <TaskListDialog
         open={dialogOpen}
-        onClose={handleDialogClose}
+        onClose={() => dispatch(setDialogOpen(false))}
         onSubmit={handleDialogSubmit}
         initialTitle={editingList?.title}
         listId={editingList?.id}
@@ -466,7 +381,7 @@ const Home = () => {
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
+        onCancel={() => dispatch(setConfirmDeleteOpen(false))}
       />
     </Box>
   );
