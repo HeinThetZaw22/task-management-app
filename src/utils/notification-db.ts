@@ -4,8 +4,8 @@ const DB_NAME = "task_notifications";
 const STORE_NAME = "notifications";
 
 export const requestNotificationPermission = async () => {
-  if (!("Notification" in window)) {
-    console.warn("This browser does not support desktop notification");
+  if (typeof Notification === "undefined") {
+    console.warn("This browser does not support desktop notifications");
     return false;
   }
 

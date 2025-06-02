@@ -2,13 +2,19 @@ import { useEffect } from "react";
 import { getAllNotifications, markAsNotified } from "@/utils/notification-db";
 
 const showNotification = (title: string, body?: string) => {
-  if (Notification.permission === "granted") {
+  if (
+    typeof Notification !== "undefined" &&
+    Notification.permission === "granted"
+  ) {
     new Notification(title, { body, requireInteraction: true });
   }
 };
 
 export const useTaskNotificationScheduler = () => {
   useEffect(() => {
+    if (typeof window === "undefined" || typeof Notification === "undefined")
+      return;
+
     const checkNotifications = async () => {
       const tasks = await getAllNotifications();
       const now = Date.now();
