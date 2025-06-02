@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Tabs,
   Tab,
@@ -29,13 +29,14 @@ import EmptyPage from "@/components/empty-page";
 import { FilterMenu } from "@/components/home/filter-menu";
 import { ListMenu } from "@/components/home/list-menu";
 import TaskLoadingSkeleton from "@/components/home/task-loading-skeleton";
-import TaskListDialog from "@/components/home/tasklist-dialog";
-import ConfirmDialog from "@/components/confirm-dialog";
 import { useInView } from "react-intersection-observer";
-import WeeklyDatePicker from "@/components/weekly-datepicker";
 import { isSameDay } from "date-fns";
 import { useTranslation } from "react-i18next";
 import Loader from "@/components/loader";
+
+const WeeklyDatePicker = lazy(() => import("@/components/weekly-datepicker"));
+const TaskListDialog = lazy(() => import("@/components/home/tasklist-dialog"));
+const ConfirmDialog = lazy(() => import("@/components/confirm-dialog"));
 
 const Home = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -93,32 +94,34 @@ const Home = () => {
   const { mutate: clearCompletedTasks } = useClearCompletedTasks();
   const allTasks = data?.pages.flatMap((page) => page.items) ?? [];
 
-  const filteredTasks = allTasks
-    .filter((task: Task) => {
-      if (useDateFilter) {
-        if (!task.due) return false;
+  const filteredTasks = useMemo(() => {
+    if (!allTasks) return [];
 
-        const dueDate = new Date(task.due);
-        const min = dueMin ? new Date(dueMin) : null;
-        const max = dueMax ? new Date(dueMax) : null;
+    return allTasks
+      .filter((task: Task) => {
+        if (useDateFilter) {
+          if (!task.due) return false;
 
-        if ((min && dueDate < min) || (max && dueDate > max)) {
-          return false;
+          const dueDate = new Date(task.due);
+          const min = dueMin ? new Date(dueMin) : null;
+          const max = dueMax ? new Date(dueMax) : null;
+
+          if ((min && dueDate < min) || (max && dueDate > max)) return false;
+
+          if (selectedDate && !isSameDay(new Date(selectedDate), dueDate)) {
+            return false;
+          }
         }
 
-        if (selectedDate && !isSameDay(new Date(selectedDate), dueDate)) {
-          return false;
-        }
-      }
-
-      return true;
-    })
-    .filter((task: Task) => {
-      if (filter === "completed") return task.status === "completed";
-      if (filter === "uncompleted") return task.status === "needsAction";
-      return true;
-    })
-    .sort((a: Task, b: Task) => a.position.localeCompare(b.position));
+        return true;
+      })
+      .filter((task: Task) => {
+        if (filter === "completed") return task.status === "completed";
+        if (filter === "uncompleted") return task.status === "needsAction";
+        return true;
+      })
+      .sort((a, b) => a.position.localeCompare(b.position));
+  }, [allTasks, useDateFilter, dueMin, dueMax, selectedDate, filter]);
 
   const { ref, inView } = useInView();
 
@@ -142,28 +145,94 @@ const Home = () => {
     }
   }, [inView, hasNextPage, fetchNextPage, isFetchingNextPage]);
 
-  const handleToggleComplete = (task: Task) => {
-    if (!activeListId) return;
-    const taskListId = activeListId;
-    patchTask(
-      {
-        listId: taskListId,
-        taskId: task.id,
-        status: task.status === "completed" ? "needsAction" : "completed",
-      },
-      {
-        onSuccess: () => {
-          toast.success(
-            `Task ${task.completed ? "marked incomplete" : "completed"}`
-          );
-          refetch();
+  const handleToggleComplete = useCallback(
+    (task: Task) => {
+      if (!activeListId) return;
+      const taskListId = activeListId;
+      patchTask(
+        {
+          listId: taskListId,
+          taskId: task.id,
+          status: task.status === "completed" ? "needsAction" : "completed",
         },
-        onError: () => {
-          toast.error("Failed to update task status");
-        },
+        {
+          onSuccess: () => {
+            toast.success(
+              `Task ${task.completed ? "marked incomplete" : "completed"}`
+            );
+            refetch();
+          },
+          onError: () => {
+            toast.error("Failed to update task status");
+          },
+        }
+      );
+    },
+    [activeListId, patchTask, refetch]
+  );
+
+  const handleDialogSubmit = useCallback(
+    ({ id, title }: { id?: string; title: string }) => {
+      if (id) {
+        updateTasklist(
+          { id, title },
+          {
+            onSuccess: () => toast.success("Task list renamed"),
+            onError: (e) => {
+              console.log(e);
+              toast.error("Failed to update task list");
+            },
+          }
+        );
+      } else {
+        createTasklist(title, {
+          onSuccess: (newList: TaskList) => {
+            toast.success("Task list created");
+            setSelectedListId(newList.id);
+            sessionStorage.setItem("selectedListId", newList.id);
+          },
+          onError: () => toast.error("Failed to create task list"),
+        });
       }
-    );
-  };
+      setDialogOpen(false);
+    },
+    [updateTasklist, createTasklist]
+  );
+
+  const handleDeleteCompletedTasks = useCallback(() => {
+    handleListMenuClose();
+    clearCompletedTasks(activeListId || "", {
+      onSuccess: () => {
+        toast.success("Deleted complete tasks");
+        refetch();
+      },
+      onError: () => {
+        toast.error("Failed to delete complete tasks");
+      },
+    });
+  }, [activeListId, clearCompletedTasks, refetch]);
+
+  const handleFilterChange = useCallback(
+    (value: null | "completed" | "uncompleted") => {
+      setFilter(value);
+      handleFilterClose();
+    },
+    []
+  );
+
+  const handleToggleDateFilter = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = event.target.checked;
+      setUseDateFilter(checked);
+
+      if (!checked) {
+        setDueMin(undefined);
+        setDueMax(undefined);
+        setSelectedDate(null);
+      }
+    },
+    []
+  );
 
   const handleOpenNewListDialog = () => {
     setEditingList(null);
@@ -176,39 +245,6 @@ const Home = () => {
   };
 
   const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
-
-  const handleDialogSubmit = ({
-    id,
-    title,
-  }: {
-    id?: string;
-    title: string;
-  }) => {
-    if (id) {
-      updateTasklist(
-        { id, title },
-        {
-          onSuccess: () => {
-            toast.success("Task list renamed");
-          },
-          onError: (e) => {
-            console.log(e);
-            toast.error("Failed to update task list");
-          },
-        }
-      );
-    } else {
-      createTasklist(title, {
-        onSuccess: (newList: TaskList) => {
-          toast.success("Task list created");
-          setSelectedListId(newList.id);
-          sessionStorage.setItem("selectedListId", newList.id);
-        },
-        onError: () => toast.error("Failed to create task list"),
-      });
-    }
     setDialogOpen(false);
   };
 
@@ -250,43 +286,12 @@ const Home = () => {
     if (list) handleOpenRenameDialog(list);
   };
 
-  const handleDeleteCompletedTasks = () => {
-    handleListMenuClose();
-    clearCompletedTasks(activeListId || "", {
-      onSuccess: () => {
-        toast.success("Deleted complete tasks");
-        refetch();
-      },
-      onError: () => {
-        toast.error("Failed to delete complete tasks");
-      },
-    });
-  };
-
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setFilterAnchorEl(event.currentTarget);
   };
 
   const handleFilterClose = () => {
     setFilterAnchorEl(null);
-  };
-
-  const handleFilterChange = (value: null | "completed" | "uncompleted") => {
-    setFilter(value);
-    handleFilterClose();
-  };
-
-  const handleToggleDateFilter = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const checked = event.target.checked;
-    setUseDateFilter(checked);
-
-    if (!checked) {
-      setDueMin(undefined);
-      setDueMax(undefined);
-      setSelectedDate(null);
-    }
   };
 
   if (!taskLists?.items?.length) {
