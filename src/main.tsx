@@ -8,6 +8,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "./theme/theme-provider";
 import CustomToaster from "./components/custom-toaster";
 import "./i18n";
+import ErrorBoundary from "./components/error-boundary";
 
 const queryClient = new QueryClient();
 
@@ -16,8 +17,10 @@ createRoot(document.getElementById("root") as HTMLElement).render(
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <RouterProvider router={router} />
-          <CustomToaster />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+            <CustomToaster />
+          </ErrorBoundary>
         </ThemeProvider>
       </QueryClientProvider>
     </GoogleOAuthProvider>
