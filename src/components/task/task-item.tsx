@@ -218,6 +218,16 @@ const TaskItem = ({ task, tasklistId, onClick }: TaskItemProps) => {
         fullWidth
         maxWidth="sm"
         scroll="body"
+        slotProps={{
+          paper: {
+            sx: (theme) => ({
+              bgcolor:
+                theme.palette.mode === "dark"
+                  ? theme.palette.background.default
+                  : undefined,
+            }),
+          },
+        }}
       >
         <EditTask
           dialogMode

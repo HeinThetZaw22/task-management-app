@@ -66,8 +66,13 @@ export const useCreateTask = () => {
       notes?: string;
       due?: string;
     }) => createTask(data),
-    onSuccess: (variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", variables.listId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "tasks" &&
+          query.queryKey[1] === variables.listId,
+      });
     },
   });
 };
@@ -83,8 +88,13 @@ export const useUpdateTask = () => {
       due?: string;
       status?: "needsAction" | "completed";
     }) => updateTask(data),
-    onSuccess: (variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", variables.listId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "tasks" &&
+          query.queryKey[1] === variables.listId,
+      });
     },
   });
 };
@@ -103,8 +113,13 @@ export const usePatchTask = () => {
         status: "needsAction" | "completed";
       }>
     ) => patchTask(data),
-    onSuccess: (variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", variables.listId] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "tasks" &&
+          query.queryKey[1] === variables.listId,
+      });
     },
   });
 };
@@ -134,8 +149,13 @@ export const useClearCompletedTasks = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (listId: string) => clearCompletedTasks(listId),
-    onSuccess: (listId) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", listId] });
+    onSuccess: (_data, listId) => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0] === "tasks" &&
+          query.queryKey[1] === listId,
+      });
     },
   });
 };

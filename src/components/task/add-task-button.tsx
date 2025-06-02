@@ -60,7 +60,15 @@ const AddTaskButton = ({
         <PlusIcon color={theme.palette.text.primary} />
       </IconButton>
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogContent sx={{ p: 0 }}>
+        <DialogContent
+          sx={(theme) => ({
+            p: 0,
+            bgcolor:
+              theme.palette.mode === "dark"
+                ? theme.palette.background.default
+                : "background.paper",
+          })}
+        >
           <AddTask
             onClose={handleClose}
             tasklistId={tasklistId}

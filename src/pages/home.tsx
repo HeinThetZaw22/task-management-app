@@ -177,7 +177,10 @@ const Home = () => {
         updateTasklist(
           { id, title },
           {
-            onSuccess: () => toast.success("Task list renamed"),
+            onSuccess: () => {
+              toast.success("Task list renamed");
+              refetch();
+            },
             onError: (e) => {
               console.log(e);
               toast.error("Failed to update task list");
@@ -188,6 +191,7 @@ const Home = () => {
         createTasklist(title, {
           onSuccess: (newList: TaskList) => {
             toast.success("Task list created");
+            refetch();
             setSelectedListId(newList.id);
             sessionStorage.setItem("selectedListId", newList.id);
           },

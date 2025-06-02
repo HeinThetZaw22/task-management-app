@@ -132,6 +132,7 @@ const EditTask = ({
         px={1}
         py={2}
         component={Paper}
+        sx={{ backgroundColor: theme.palette.background.paper }}
         elevation={1}
       >
         <Button
@@ -187,7 +188,10 @@ const EditTask = ({
           />
         </Box>
 
-        <Paper variant="outlined">
+        <Paper
+          variant="outlined"
+          sx={{ backgroundColor: theme.palette.background.paper }}
+        >
           <Box
             display="flex"
             justifyContent="space-between"
@@ -248,6 +252,7 @@ const EditTask = ({
         <Paper
           variant="outlined"
           sx={{
+            backgroundColor: theme.palette.background.paper,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
